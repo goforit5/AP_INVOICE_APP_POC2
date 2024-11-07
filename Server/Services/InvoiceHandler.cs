@@ -22,6 +22,7 @@ public sealed class InvoiceHandler
         _logContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("logs");
         _errorContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("errors");
         _blobClient = blobClient;
+        _logger = logger;
     }
 
     public async Task<InvoiceDocument> ProcessNewInvoice(IFormFile file)
