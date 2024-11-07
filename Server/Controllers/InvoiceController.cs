@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 [ApiController]
-[Route("api/invoice")]
+[Route("api/[controller]")]
 public class InvoiceController : ControllerBase
 {
     private readonly InvoiceHandler _invoiceHandler;
@@ -16,7 +16,7 @@ public class InvoiceController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost("upload")]
+    [HttpPost]
     public async Task<IActionResult> UploadInvoice(IFormFile file)
     {
         _logger.LogInformation("Upload endpoint hit");
