@@ -31,8 +31,7 @@ public sealed class InvoiceHandler
 
             // Test Cosmos DB connectivity
             var response = _cosmosContainer.ReadContainerAsync().GetAwaiter().GetResult();
-            _logger.LogInformation("Successfully connected to Cosmos container. RU/s: {RUs}", 
-                response.Resource.ThroughputProperties?.Throughput ?? 0);
+            _logger.LogInformation("Successfully connected to Cosmos container");
         }
         catch (CosmosException ex)
         {
