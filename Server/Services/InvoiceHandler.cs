@@ -18,11 +18,37 @@ public sealed class InvoiceHandler
 
     public InvoiceHandler(CosmosClient cosmosClient, BlobServiceClient blobClient, ILogger<InvoiceHandler> logger)
     {
-        _cosmosContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("invoices");
-        _logContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("logs");
-        _errorContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("errors");
-        _blobClient = blobClient;
         _logger = logger;
+        _logger.LogInformation("Initializing InvoiceHandler with Cosmos endpoint: {Endpoint}", 
+            cosmosClient.Endpoint);
+
+        try
+        {
+            _cosmosContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("invoices");
+            _logContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("logs");
+            _errorContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("errors");
+            _blobClient = blobClient;
+
+            // Test Cosmos DB connectivity
+            var response = _cosmosContainer.ReadContainerAsync().GetAwaiter().GetResult();
+            _logger.LogInformation("Successfully connected to Cosmos container. RU/s: {RUs}", 
+                response.Resource.ThroughputProperties?.Throughput ?? 0);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError("Cosmos DB Connection Error: Status={Status}, SubStatus={SubStatus}, Message={Message}", 
+                ex.StatusCode, ex.SubStatusCode, ex.Message);
+            if (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogError("Possible IP restriction issue. Your client IP needs to be added to Cosmos DB firewall.");
+            }
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error initializing Cosmos DB connection");
+            throw;
+        }
     }
 
     public async Task<InvoiceDocument> ProcessNewInvoice(IFormFile file)
