@@ -111,7 +111,7 @@ public sealed class InvoiceHandler
         {
             _logger.LogError(ex, "General Error in ProcessNewInvoice: {Message}", ex.Message);
             // General error logging
-            await LogErrorAsync(cosmosDocumentId, cosmosDocumentId, $"General error: {ex.Message}", ex.StackTrace);
+            await LogErrorAsync(cosmosDocumentId, cosmosDocumentId, $"General error: {ex.Message}", ex.StackTrace ?? "No stack trace available");
             throw;
         }
     }
@@ -143,7 +143,7 @@ public sealed class InvoiceHandler
         }
     }
 
-    public async Task UpdateProcessingStepAsync(string invoiceId, string stepName, string status, string details = null, string errorMessage = null, string errorCode = null)
+    public async Task UpdateProcessingStepAsync(string invoiceId, string stepName, string status, string? details = null, string? errorMessage = null, string? errorCode = null)
     {
         _logger.LogInformation("Updating processing step for invoice {InvoiceId}: Step={StepName}, Status={Status}", 
             invoiceId, stepName, status);
