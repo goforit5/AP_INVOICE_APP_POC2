@@ -117,13 +117,18 @@ public class InvoiceHandler
 
     private async Task<BlobInfo> SaveToBlob(IFormFile file, string blobId, string correlationId)
     {
+        _logger.LogInformation("Starting blob upload for file {FileName} with blobId {BlobId}", file.FileName, blobId);
         var containerClient = _blobClient.GetBlobContainerClient("invoices");
         var blobClient = containerClient.GetBlobClient($"{blobId}.pdf");
 
-        using var stream = file.OpenReadStream();
-        await blobClient.UploadAsync(stream, overwrite: true);
+        try 
+        {
+            using var stream = file.OpenReadStream();
+            _logger.LogDebug("Uploading {SizeInBytes} bytes to blob storage", file.Length);
+            await blobClient.UploadAsync(stream, overwrite: true);
+            _logger.LogInformation("Successfully uploaded blob {BlobId}", blobId);
 
-        return new BlobInfo
+            return new BlobInfo
         {
             BlobUrl = blobClient.Uri.ToString(),
             SizeInBytes = file.Length,
@@ -133,9 +138,14 @@ public class InvoiceHandler
 
     public async Task UpdateProcessingStepAsync(string invoiceId, string stepName, string status, string details = null, string errorMessage = null, string errorCode = null)
     {
-        // Read the invoice document
-        var response = await _cosmosContainer.ReadItemAsync<InvoiceDocument>(invoiceId, new PartitionKey(invoiceId));
-        var invoiceDocument = response.Resource;
+        _logger.LogInformation("Updating processing step for invoice {InvoiceId}: Step={StepName}, Status={Status}", 
+            invoiceId, stepName, status);
+
+        try
+        {
+            // Read the invoice document
+            var response = await _cosmosContainer.ReadItemAsync<InvoiceDocument>(invoiceId, new PartitionKey(invoiceId));
+            var invoiceDocument = response.Resource;
 
         // Find or create the processing step
         var processingStep = invoiceDocument.ProcessingSteps.FirstOrDefault(ps => ps.StepName == stepName);
@@ -178,6 +188,7 @@ public class InvoiceHandler
 
         // Replace the document in Cosmos DB
         await _cosmosContainer.ReplaceItemAsync(invoiceDocument, invoiceId, new PartitionKey(invoiceId));
+        _logger.LogInformation("Successfully updated processing step for invoice {InvoiceId}", invoiceId);
     }
 
     private async Task LogAsync(string fileId, string correlationId, string level, string message)

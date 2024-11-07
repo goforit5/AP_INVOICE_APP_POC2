@@ -13,6 +13,7 @@ public class InvoiceController : ControllerBase
     public InvoiceController(InvoiceHandler invoiceHandler, ILogger<InvoiceController> logger)
     {
         _invoiceHandler = invoiceHandler;
+        _logger = logger;
     }
 
     [HttpPost("upload")]
