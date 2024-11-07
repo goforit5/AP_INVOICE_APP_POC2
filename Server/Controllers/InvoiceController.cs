@@ -1,14 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 [ApiController]
 [Route("api/[controller]")]
 public class InvoiceController : ControllerBase
 {
     private readonly InvoiceHandler _invoiceHandler;
+    private readonly ILogger<InvoiceController> _logger;
 
-    public InvoiceController(InvoiceHandler invoiceHandler)
+    public InvoiceController(InvoiceHandler invoiceHandler, ILogger<InvoiceController> logger)
     {
         _invoiceHandler = invoiceHandler;
     }
@@ -16,24 +18,23 @@ public class InvoiceController : ControllerBase
     [HttpPost("upload")]
     public async Task<IActionResult> UploadInvoice(IFormFile file)
     {
-        Console.WriteLine(">>> Upload endpoint hit");
+        _logger.LogInformation("Upload endpoint hit");
         if (file == null)
         {
-            Console.WriteLine(">>> No file received");
+            _logger.LogWarning("No file received");
             return BadRequest("No file uploaded.");
         }
 
         try
         {
-            Console.WriteLine($">>> Starting to process file: {file.FileName}");
+            _logger.LogInformation("Starting to process file: {FileName}", file.FileName);
             var result = await _invoiceHandler.ProcessNewInvoice(file);
-            Console.WriteLine(">>> Upload completed successfully");
+            _logger.LogInformation("Upload completed successfully");
             return Ok(result);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($">>> Error in upload: {ex.Message}");
-            Console.WriteLine($">>> Stack trace: {ex.StackTrace}");
+            _logger.LogError(ex, "Error in upload: {Message}", ex.Message);
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }

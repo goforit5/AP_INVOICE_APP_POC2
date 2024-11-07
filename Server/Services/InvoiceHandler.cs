@@ -1,6 +1,7 @@
 using Microsoft.Azure.Cosmos;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
@@ -13,8 +14,9 @@ public class InvoiceHandler
     private readonly Container _logContainer;
     private readonly Container _errorContainer;
     private readonly BlobServiceClient _blobClient;
+    private readonly ILogger<InvoiceHandler> _logger;
 
-    public InvoiceHandler(CosmosClient cosmosClient, BlobServiceClient blobClient)
+    public InvoiceHandler(CosmosClient cosmosClient, BlobServiceClient blobClient, ILogger<InvoiceHandler> logger)
     {
         _cosmosContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("invoices");
         _logContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("logs");
@@ -24,23 +26,23 @@ public class InvoiceHandler
 
     public async Task<InvoiceDocument> ProcessNewInvoice(IFormFile file)
     {
-        Console.WriteLine(">>> Starting ProcessNewInvoice");
+        _logger.LogInformation("Starting ProcessNewInvoice");
         var cosmosDocumentId = $"inv_{Guid.NewGuid()}";  // Unique ID for Cosmos DB document
         var blobId = $"blob_{Guid.NewGuid()}";           // Unique ID for Blob Storage file
         var uploadedAt = DateTime.UtcNow;                // Capture the current timestamp
-        Console.WriteLine($">>> Generated IDs - Cosmos: {cosmosDocumentId}, Blob: {blobId}");
+        _logger.LogInformation("Generated IDs - Cosmos: {CosmosId}, Blob: {BlobId}", cosmosDocumentId, blobId);
 
         try
         {
             // Step 1: Save the file to Blob Storage with a unique blobId
-            Console.WriteLine(">>> Attempting to save to blob storage");
+            _logger.LogInformation("Attempting to save to blob storage");
             await LogAsync(blobId, cosmosDocumentId, "Info", "Starting to upload file to Blob Storage.");
             var blobInfo = await SaveToBlob(file, blobId, cosmosDocumentId);
             await LogAsync(blobId, cosmosDocumentId, "Info", $"File uploaded to Blob Storage with Blob ID: {blobId}");
-            Console.WriteLine(">>> Successfully saved to blob storage");
+            _logger.LogInformation("Successfully saved to blob storage");
 
             // Step 2: Create the Metadata object
-            Console.WriteLine(">>> Creating metadata");
+            _logger.LogInformation("Creating metadata");
             var metadata = new Metadata
             {
                 FileName = file.FileName,
@@ -89,25 +91,24 @@ public class InvoiceHandler
             }
 
             // Step 5: Store the new document in Cosmos DB
-            Console.WriteLine(">>> Attempting to save to Cosmos DB");
+            _logger.LogInformation("Attempting to save to Cosmos DB");
             var response = await _cosmosContainer.CreateItemAsync(newInvoice);
             await LogAsync(cosmosDocumentId, cosmosDocumentId, "Info", $"Invoice document created in Cosmos DB. Cosmos status code: {response.StatusCode}");
-            Console.WriteLine(">>> Successfully saved to Cosmos DB");
+            _logger.LogInformation("Successfully saved to Cosmos DB");
 
             return newInvoice;
         }
         catch (CosmosException cosmosEx)
         {
-            Console.WriteLine($">>> Cosmos DB Error: {cosmosEx.Message}");
-            Console.WriteLine($">>> Cosmos Diagnostics: {cosmosEx.Diagnostics}");
+            _logger.LogError(cosmosEx, "Cosmos DB Error: {Message}", cosmosEx.Message);
+            _logger.LogError("Cosmos Diagnostics: {Diagnostics}", cosmosEx.Diagnostics);
             // Cosmos-specific error logging with Cosmos diagnostics
             await LogErrorAsync(cosmosDocumentId, cosmosDocumentId, $"Cosmos DB error: {cosmosEx.Message}. Cosmos Diagnostics: {cosmosEx.Diagnostics}", cosmosEx.StackTrace);
             throw;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($">>> General Error in ProcessNewInvoice: {ex.Message}");
-            Console.WriteLine($">>> Stack trace: {ex.StackTrace}");
+            _logger.LogError(ex, "General Error in ProcessNewInvoice: {Message}", ex.Message);
             // General error logging
             await LogErrorAsync(cosmosDocumentId, cosmosDocumentId, $"General error: {ex.Message}", ex.StackTrace);
             throw;
