@@ -153,48 +153,54 @@ public sealed class InvoiceHandler
             var response = await _cosmosContainer.ReadItemAsync<InvoiceDocument>(invoiceId, new PartitionKey(invoiceId));
             var invoiceDocument = response.Resource;
 
-        // Find or create the processing step
-        var processingStep = invoiceDocument.ProcessingSteps.FirstOrDefault(ps => ps.StepName == stepName);
-        if (processingStep == null)
-        {
-            processingStep = new ProcessingStep
+            // Find or create the processing step
+            var processingStep = invoiceDocument.ProcessingSteps.FirstOrDefault(ps => ps.StepName == stepName);
+            if (processingStep == null)
             {
-                StepName = stepName,
-                Status = status,
-                StartedAt = DateTime.UtcNow,
-                Details = details
-            };
-            invoiceDocument.ProcessingSteps.Add(processingStep);
-        }
-        else
-        {
-            processingStep.Status = status;
-            if (status == "Completed" || status == "Failed")
-            {
-                processingStep.CompletedAt = DateTime.UtcNow;
-            }
-            if (!string.IsNullOrEmpty(details))
-            {
-                processingStep.Details = details;
-            }
-            if (status == "Failed" && !string.IsNullOrEmpty(errorMessage))
-            {
-                processingStep.ErrorInfo = new ErrorInfo
+                processingStep = new ProcessingStep
                 {
-                    ErrorMessage = errorMessage,
-                    ErrorCode = errorCode
+                    StepName = stepName,
+                    Status = status,
+                    StartedAt = DateTime.UtcNow,
+                    Details = details
                 };
+                invoiceDocument.ProcessingSteps.Add(processingStep);
             }
+            else
+            {
+                processingStep.Status = status;
+                if (status == "Completed" || status == "Failed")
+                {
+                    processingStep.CompletedAt = DateTime.UtcNow;
+                }
+                if (!string.IsNullOrEmpty(details))
+                {
+                    processingStep.Details = details;
+                }
+                if (status == "Failed" && !string.IsNullOrEmpty(errorMessage))
+                {
+                    processingStep.ErrorInfo = new ErrorInfo
+                    {
+                        ErrorMessage = errorMessage,
+                        ErrorCode = errorCode
+                    };
+                }
+            }
+
+            // Update ProcessingStatus
+            invoiceDocument.ProcessingStatus.CurrentStatus = status == "Failed" ? "Failed" : "InProgress";
+            invoiceDocument.ProcessingStatus.CurrentStep = stepName;
+            invoiceDocument.ProcessingStatus.LastUpdated = DateTime.UtcNow;
+
+            // Replace the document in Cosmos DB
+            await _cosmosContainer.ReplaceItemAsync(invoiceDocument, invoiceId, new PartitionKey(invoiceId));
+            _logger.LogInformation("Successfully updated processing step for invoice {InvoiceId}", invoiceId);
         }
-
-        // Update ProcessingStatus
-        invoiceDocument.ProcessingStatus.CurrentStatus = status == "Failed" ? "Failed" : "InProgress";
-        invoiceDocument.ProcessingStatus.CurrentStep = stepName;
-        invoiceDocument.ProcessingStatus.LastUpdated = DateTime.UtcNow;
-
-        // Replace the document in Cosmos DB
-        await _cosmosContainer.ReplaceItemAsync(invoiceDocument, invoiceId, new PartitionKey(invoiceId));
-        _logger.LogInformation("Successfully updated processing step for invoice {InvoiceId}", invoiceId);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating processing step for invoice {InvoiceId}: {Message}", invoiceId, ex.Message);
+            throw;
+        }
     }
 
     private async Task LogAsync(string fileId, string correlationId, string level, string message)
