@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;  // For List<T>
 using System.Linq;                // For FirstOrDefault
 
-public class InvoiceHandler
+public sealed class InvoiceHandler
 {
     private readonly Container _cosmosContainer;
     private readonly Container _logContainer;
