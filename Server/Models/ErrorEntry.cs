@@ -5,9 +5,9 @@ public class ErrorEntry
 {
     public string id { get; set; }  // Cosmos DB required id
     public string CorrelationId { get; set; }  // Links to original invoice
-    public string FileId { get; set; }
-    public string ErrorMessage { get; set; }
-    public string StackTrace { get; set; }
+    public required string FileId { get; set; }
+    public required string ErrorMessage { get; set; }
+    public required string StackTrace { get; set; }
     public DateTime Timestamp { get; set; }
 
     public ErrorEntry(string correlationId)

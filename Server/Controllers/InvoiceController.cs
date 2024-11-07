@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/invoice")]
 public class InvoiceController : ControllerBase
 {
     private readonly InvoiceHandler _invoiceHandler;
