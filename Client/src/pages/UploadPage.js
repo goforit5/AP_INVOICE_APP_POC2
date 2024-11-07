@@ -23,8 +23,7 @@ const UploadPage = () => {
         if (e.key === 'u') {} // Already on upload page
         else if (e.key === 'r') {
           // Navigate to review page of first awaiting review invoice
-        }
-        else if (e.key === 'q') navigate('/queue');
+        } else if (e.key === 'q') navigate('/queue');
         document.removeEventListener('keydown', handleSecondKey);
       };
       document.addEventListener('keydown', handleSecondKey);
@@ -122,7 +121,7 @@ const UploadPage = () => {
                   <div className="bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 w-full">
                     <div 
                       className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" 
-                      style={{ width:  }}
+                      style={{ width: `${uploadProgress[file.name] || 0}%` }}
                     ></div>
                   </div>
                 </div>
