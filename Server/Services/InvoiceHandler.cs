@@ -140,11 +140,6 @@ public class InvoiceHandler
             _logger.LogError(ex, "Failed to upload blob {BlobId}: {Message}", blobId, ex.Message);
             throw;
         }
-        {
-            BlobUrl = blobClient.Uri.ToString(),
-            SizeInBytes = file.Length,
-            BlobId = blobId    // Store the blob ID for reference
-        };
     }
 
     public async Task UpdateProcessingStepAsync(string invoiceId, string stepName, string status, string details = null, string errorMessage = null, string errorCode = null)
