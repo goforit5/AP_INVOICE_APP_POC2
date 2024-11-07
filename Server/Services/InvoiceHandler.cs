@@ -129,6 +129,17 @@ public class InvoiceHandler
             _logger.LogInformation("Successfully uploaded blob {BlobId}", blobId);
 
             return new BlobInfo
+            {
+                BlobUrl = blobClient.Uri.ToString(),
+                SizeInBytes = file.Length,
+                BlobId = blobId    // Store the blob ID for reference
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload blob {BlobId}: {Message}", blobId, ex.Message);
+            throw;
+        }
         {
             BlobUrl = blobClient.Uri.ToString(),
             SizeInBytes = file.Length,
