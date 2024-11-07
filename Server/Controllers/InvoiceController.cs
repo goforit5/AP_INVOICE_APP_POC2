@@ -16,17 +16,24 @@ public class InvoiceController : ControllerBase
     [HttpPost("upload")]
     public async Task<IActionResult> UploadInvoice(IFormFile file)
     {
+        Console.WriteLine(">>> Upload endpoint hit");
         if (file == null)
+        {
+            Console.WriteLine(">>> No file received");
             return BadRequest("No file uploaded.");
+        }
 
         try
         {
+            Console.WriteLine($">>> Starting to process file: {file.FileName}");
             var result = await _invoiceHandler.ProcessNewInvoice(file);
+            Console.WriteLine(">>> Upload completed successfully");
             return Ok(result);
         }
         catch (Exception ex)
         {
-            // Log the exception or handle it as needed
+            Console.WriteLine($">>> Error in upload: {ex.Message}");
+            Console.WriteLine($">>> Stack trace: {ex.StackTrace}");
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
