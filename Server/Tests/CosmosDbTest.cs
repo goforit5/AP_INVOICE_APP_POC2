@@ -19,6 +19,9 @@ public class CosmosDbTest
     public async Task RunConnectionTests()
     {
         _logger.LogInformation("Starting Cosmos DB Connection Tests");
+        _logger.LogInformation($"Connecting to endpoint: {_cosmosClient.Endpoint}");
+        _logger.LogInformation("Connection mode: {0}", _cosmosClient.ClientOptions.ConnectionMode);
+        _logger.LogInformation("Request timeout: {0}s", _cosmosClient.ClientOptions.RequestTimeout.TotalSeconds);
 
         try
         {

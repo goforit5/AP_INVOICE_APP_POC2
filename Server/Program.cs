@@ -64,8 +64,11 @@ builder.Services.AddSingleton(sp =>
 {
     var clientOptions = new CosmosClientOptions
     {
-        MaxRetryAttemptsOnRateLimitedRequests = 3,
-        MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60)
+        MaxRetryAttemptsOnRateLimitedRequests = 9,
+        MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
+        RequestTimeout = TimeSpan.FromSeconds(60),
+        OpenTcpConnectionTimeout = TimeSpan.FromSeconds(60),
+        ConnectionMode = ConnectionMode.Gateway // Switch to Gateway mode which is more reliable through firewalls
     };
     return new CosmosClient(cosmosDbConfig.ConnectionString, clientOptions);
 });
