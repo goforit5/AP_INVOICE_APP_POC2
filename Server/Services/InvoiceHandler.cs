@@ -7,15 +7,16 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;  // For List<T>
 using System.Linq;                // For FirstOrDefault
+using System.Net;                 // For HttpStatusCode
+using Polly;                      // For Policy
 
 public sealed class InvoiceHandler
 {
-    private readonly Container _cosmosContainer;
-    private readonly Container _logContainer;
-    private readonly Container _errorContainer;
+    private Container _cosmosContainer = null!;
+    private Container _logContainer = null!;
+    private Container _errorContainer = null!;
     private readonly BlobServiceClient _blobClient;
     private readonly ILogger<InvoiceHandler> _logger;
-
     private readonly CosmosDbConfig _cosmosConfig;
 
     public InvoiceHandler(CosmosClient cosmosClient, BlobServiceClient blobClient, ILogger<InvoiceHandler> logger, CosmosDbConfig cosmosConfig)
@@ -27,10 +28,10 @@ public sealed class InvoiceHandler
         _logger.LogInformation("Initializing InvoiceHandler with Cosmos endpoint: {Endpoint}", 
             cosmosClient.Endpoint);
 
-        InitializeCosmosContainers(cosmosClient);
+        InitializeCosmosContainers(cosmosClient).GetAwaiter().GetResult();
     }
 
-    private void InitializeCosmosContainers(CosmosClient cosmosClient)
+    private async Task InitializeCosmosContainers(CosmosClient cosmosClient)
     {
         try
         {
