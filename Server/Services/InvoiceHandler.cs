@@ -16,28 +16,52 @@ public sealed class InvoiceHandler
     private readonly BlobServiceClient _blobClient;
     private readonly ILogger<InvoiceHandler> _logger;
 
-    public InvoiceHandler(CosmosClient cosmosClient, BlobServiceClient blobClient, ILogger<InvoiceHandler> logger)
+    private readonly CosmosDbConfig _cosmosConfig;
+
+    public InvoiceHandler(CosmosClient cosmosClient, BlobServiceClient blobClient, ILogger<InvoiceHandler> logger, CosmosDbConfig cosmosConfig)
     {
         _logger = logger;
+        _cosmosConfig = cosmosConfig;
+        _blobClient = blobClient;
+
         _logger.LogInformation("Initializing InvoiceHandler with Cosmos endpoint: {Endpoint}", 
             cosmosClient.Endpoint);
 
+        InitializeCosmosContainers(cosmosClient);
+    }
+
+    private void InitializeCosmosContainers(CosmosClient cosmosClient)
+    {
         try
         {
-            _cosmosContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("invoices");
-            _logContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("logs");
-            _errorContainer = cosmosClient.GetDatabase("ap-invoice-db").GetContainer("errors");
-            _blobClient = blobClient;
+            var database = cosmosClient.GetDatabase(_cosmosConfig.DatabaseName);
+            _cosmosContainer = database.GetContainer(_cosmosConfig.InvoiceContainer);
+            _logContainer = database.GetContainer(_cosmosConfig.LogContainer);
+            _errorContainer = database.GetContainer(_cosmosConfig.ErrorContainer);
 
-            // Test Cosmos DB connectivity
-            var response = _cosmosContainer.ReadContainerAsync().GetAwaiter().GetResult();
-            _logger.LogInformation("Successfully connected to Cosmos container");
+            // Test connectivity with retry
+            var policy = Policy
+                .Handle<CosmosException>(ex => ex.StatusCode == HttpStatusCode.ServiceUnavailable)
+                .WaitAndRetryAsync(3, retryAttempt => 
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (exception, timeSpan, retryCount, context) =>
+                    {
+                        _logger.LogWarning("Attempt {RetryCount} to connect to Cosmos DB failed. Retrying in {TimeSpan}...",
+                            retryCount, timeSpan);
+                    });
+
+            policy.ExecuteAsync(async () =>
+            {
+                var response = await _cosmosContainer.ReadContainerAsync();
+                _logger.LogInformation("Successfully connected to Cosmos container");
+                return response;
+            }).GetAwaiter().GetResult();
         }
         catch (CosmosException ex)
         {
             _logger.LogError("Cosmos DB Connection Error: Status={Status}, SubStatus={SubStatus}, Message={Message}", 
                 ex.StatusCode, ex.SubStatusCode, ex.Message);
-            if (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            if (ex.StatusCode == HttpStatusCode.Forbidden)
             {
                 _logger.LogError("Possible IP restriction issue. Your client IP needs to be added to Cosmos DB firewall.");
             }
