@@ -51,12 +51,12 @@ public sealed class InvoiceHandler
                             retryCount, timeSpan);
                     });
 
-            policy.ExecuteAsync(async () =>
+            await policy.ExecuteAsync(async () =>
             {
                 var response = await _cosmosContainer.ReadContainerAsync();
                 _logger.LogInformation("Successfully connected to Cosmos container");
                 return response;
-            }).GetAwaiter().GetResult();
+            });
         }
         catch (CosmosException ex)
         {
