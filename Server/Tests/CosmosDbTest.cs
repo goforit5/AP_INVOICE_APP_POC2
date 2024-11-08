@@ -13,7 +13,15 @@ public class CosmosDbTest
     {
         _cosmosClient = cosmosClient;
         _logger = logger;
-        _container = _cosmosClient.GetDatabase(databaseName).GetContainer(containerName);
+        
+        // Create database if it doesn't exist
+        Database database = _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName).GetAwaiter().GetResult();
+        _logger.LogInformation("Database ready: {DatabaseName}", databaseName);
+        
+        // Create container if it doesn't exist
+        ContainerProperties containerProperties = new ContainerProperties(containerName, "/id");
+        _container = database.CreateContainerIfNotExistsAsync(containerProperties).GetAwaiter().GetResult();
+        _logger.LogInformation("Container ready: {ContainerName}", containerName);
     }
 
     public async Task RunConnectionTests()
