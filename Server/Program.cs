@@ -1,8 +1,11 @@
 using Microsoft.Azure.Cosmos;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration; 
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Extensions.Http;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,28 +31,47 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Get connection strings with debug output
-var cosmosConnectionString = Environment.GetEnvironmentVariable("COSMOS_DB_CONNECTION_STRING");
-var storageConnectionString = Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING");
-
-// Add debug output
-Console.WriteLine($"Cosmos DB Connection String exists: {!string.IsNullOrEmpty(cosmosConnectionString)}");
-Console.WriteLine($"Storage Connection String exists: {!string.IsNullOrEmpty(storageConnectionString)}");
-
-if (string.IsNullOrEmpty(cosmosConnectionString))
+// Configure CosmosDB settings
+var cosmosDbConfig = builder.Configuration.GetSection("Azure:CosmosDb").Get<CosmosDbConfig>();
+if (cosmosDbConfig == null)
 {
-    throw new InvalidOperationException("Cosmos DB connection string not found in configuration.");
+    throw new InvalidOperationException("CosmosDB configuration is missing or invalid.");
 }
 
+// Configure Azure Storage
+var storageConnectionString = builder.Configuration.GetValue<string>("Azure:BlobStorage:ConnectionString");
 if (string.IsNullOrEmpty(storageConnectionString))
 {
     throw new InvalidOperationException("Azure Storage connection string not found in configuration.");
 }
 
+// Configure Polly retry policy
+var retryPolicy = Policy<HttpResponseMessage>
+    .Handle<CosmosException>(ex => ex.StatusCode == HttpStatusCode.ServiceUnavailable)
+    .WaitAndRetryAsync(3, retryAttempt => 
+        TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+        onRetry: (exception, timeSpan, retryCount, context) =>
+        {
+            builder.Services.BuildServiceProvider()
+                .GetService<ILogger<InvoiceHandler>>()?
+                .LogWarning("Attempt {RetryCount} to connect to Cosmos DB failed. Retrying in {TimeSpan}...",
+                    retryCount, timeSpan);
+        });
+
 // Register services
-builder.Services.AddSingleton(new CosmosClient(cosmosConnectionString));
+builder.Services.AddSingleton(cosmosDbConfig);
+builder.Services.AddSingleton(sp => 
+{
+    var clientOptions = new CosmosClientOptions
+    {
+        MaxRetryAttemptsOnRateLimitedRequests = 3,
+        MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60)
+    };
+    return new CosmosClient(cosmosDbConfig.ConnectionString, clientOptions);
+});
 builder.Services.AddSingleton(new BlobServiceClient(storageConnectionString));
 builder.Services.AddSingleton<InvoiceHandler>();
+builder.Services.AddHttpClient(); // Add HttpClient factory
 builder.Services.AddControllers();
 
 var app = builder.Build();
