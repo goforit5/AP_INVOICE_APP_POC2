@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "S+7guXGs/sQ=",
+  "dgSpecHash": "zAxRAhQKROs=",
   "success": true,
   "projectFilePath": "/Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/Server.csproj",
   "expectedPackageFiles": [
@@ -24,6 +24,9 @@
     "/Users/andrew/.nuget/packages/microsoft.win32.systemevents/6.0.0/microsoft.win32.systemevents.6.0.0.nupkg.sha512",
     "/Users/andrew/.nuget/packages/netstandard.library/1.6.1/netstandard.library.1.6.1.nupkg.sha512",
     "/Users/andrew/.nuget/packages/newtonsoft.json/10.0.2/newtonsoft.json.10.0.2.nupkg.sha512",
+    "/Users/andrew/.nuget/packages/polly/8.4.2/polly.8.4.2.nupkg.sha512",
+    "/Users/andrew/.nuget/packages/polly.core/8.4.2/polly.core.8.4.2.nupkg.sha512",
+    "/Users/andrew/.nuget/packages/polly.extensions.http/3.0.0/polly.extensions.http.3.0.0.nupkg.sha512",
     "/Users/andrew/.nuget/packages/runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl/4.3.2/runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
     "/Users/andrew/.nuget/packages/runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl/4.3.2/runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
     "/Users/andrew/.nuget/packages/runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl/4.3.2/runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",

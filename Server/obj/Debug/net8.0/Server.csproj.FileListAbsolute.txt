@@ -24,6 +24,9 @@
 /Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Microsoft.OpenApi.dll
 /Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Microsoft.Win32.SystemEvents.dll
 /Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Newtonsoft.Json.dll
+/Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Polly.dll
+/Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Polly.Core.dll
+/Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Polly.Extensions.Http.dll
 /Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Sprache.dll
 /Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Swashbuckle.AspNetCore.Swagger.dll
 /Users/andrew/Projects/ap_invoice/ap_invoice_app_poc2/Server/bin/Debug/net8.0/Swashbuckle.AspNetCore.SwaggerGen.dll
