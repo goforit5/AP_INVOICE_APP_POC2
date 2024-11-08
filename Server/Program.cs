@@ -73,6 +73,16 @@ builder.Services.AddSingleton<InvoiceHandler>();
 builder.Services.AddHttpClient(); // Add HttpClient factory
 builder.Services.AddControllers();
 
+// Add Cosmos DB Test
+builder.Services.AddSingleton<CosmosDbTest>(sp => 
+{
+    var cosmosClient = sp.GetRequiredService<CosmosClient>();
+    var logger = sp.GetRequiredService<ILogger<CosmosDbTest>>();
+    return new CosmosDbTest(cosmosClient, logger, 
+        cosmosDbConfig.DatabaseName, 
+        cosmosDbConfig.InvoiceContainer);
+});
+
 var app = builder.Build();
 
 // Use CORS
@@ -80,5 +90,9 @@ app.UseCors("AllowReactApp");
 
 // Map Controllers
 app.MapControllers();
+
+// Run Cosmos DB tests
+var cosmosTest = app.Services.GetRequiredService<CosmosDbTest>();
+await cosmosTest.RunConnectionTests();
 
 app.Run();
